@@ -2,10 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
-
 #include "hash.h"
 
-/* rehash, if max_node reached */
+/*rehash, if max_node reached */
 static const struct hash_spec_st {
     unsigned int nslot;
     unsigned int max_node;
@@ -33,7 +32,7 @@ static void *zero_alloc(int size)
 /* the default key function, famous time33 alg */
 static unsigned int hash_default_key_time33(const void *key, int klen)
 {
-    unsigned int h = 5318;
+    unsigned int h = 5381;
     const unsigned char *p = (const unsigned char *)key;
 
     while (klen > 0) {
@@ -110,7 +109,7 @@ void hash_insert(hash_st *ht, const void *key, int len, void *val)
     unsigned int hval = ht->hkey(key, len);
     unsigned int idx = hval & (ht->nslot - 1);
     struct hash_node_st *tmp;
-    struct hash_node_st *p = ht->slots[idx];	
+    struct hash_node_st *p = ht->slots[idx];    
 
     /* lookup whether the node exist, replace then */
     while (p) {
@@ -143,7 +142,7 @@ void hash_insert(hash_st *ht, const void *key, int len, void *val)
     ht->slots[idx] = tmp;
     ht->nelement++;
 
-    if (ht->nelement >= ht->max_element)			/* rehash after newly node inserted */
+    if (ht->nelement >= ht->max_element)            /* rehash after newly node inserted */
       hash_rehash(ht);
 }
 
@@ -242,10 +241,6 @@ int hash_walk(hash_st *ht, void *udata, hash_walk_func_t fn)
     return 0;
 }
 
-#ifdef __HASH_TEST__
-
-#include "strutils.h"
-
 const char *search[6] = {
     "123abc",
     "456abc",
@@ -255,6 +250,7 @@ const char *search[6] = {
     "10086abc"
 };
 
+#ifdef __HASH_TEST__
 int main(int argc, char **argv)
 {
     int i;
@@ -262,9 +258,9 @@ int main(int argc, char **argv)
 
     for (i = 0; i < 100000; ++i) {
         char buf[100];
-        int n = str_snprintf(buf, 100, "%dabc", i);
+        int n = snprintf(buf, 100, "%dabc", i);
 
-        hash_insert(h, buf, n, (void *)i);
+        hash_insert(h, buf, n, (void *)&i);
     }
 
 
@@ -273,13 +269,13 @@ int main(int argc, char **argv)
     void *k;
     for (i = 0; i < 4; ++i) {
         if (hash_search(h, search[i], strlen(search[i]), &k) == 0) {
-            printf("found %s in %d\n", search[i], (int)k);
+            printf("found %s in %d\n", search[i], *(int *)k);
         }
     }
 
     for (i = 0; i < 100000; ++i) {
         char buf[100];
-        int n = str_snprintf(buf, 100, "%dabc", i);
+        int n = snprintf(buf, 100, "%dabc", i);
 
         hash_delete(h, buf, n);
     }
@@ -287,6 +283,5 @@ int main(int argc, char **argv)
     hash_destroy(h);
     return 0;
 }
-
 #endif
 
